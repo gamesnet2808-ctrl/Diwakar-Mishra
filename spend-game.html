@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spend Diwakar's Money</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,sans-serif;background:#eef1f5;color:#1b2430}
+header{text-align:center;padding:32px 16px 8px}
+h1{margin:0 0 6px;font-size:2rem}
+.sub{color:#5b6677;margin:0}
+.avatar{width:96px;height:96px;border-radius:50%;background:linear-gradient(180deg,#2ecc71,#1abc9c);color:#fff;font-size:3rem;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+#bar{position:sticky;top:0;z-index:5;background:#1fa463;color:#fff;text-align:center;padding:14px;font-size:1.8rem;font-weight:800;box-shadow:0 2px 8px #0003}
+#bar small{display:block;font-size:.8rem;font-weight:500;opacity:.9}
+#grid{max-width:960px;margin:24px auto;padding:0 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.card{background:#fff;border-radius:14px;padding:18px;text-align:center;box-shadow:0 2px 6px #0001}
+.emoji{font-size:3.4rem}
+.name{font-weight:700;margin:6px 0 2px}
+.price{color:#1fa463;font-weight:700;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center;justify-content:center}
+button{border:0;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:.95rem}
+.sell{background:#e6e9ee;color:#333}
+.buy{background:#1fa463;color:#fff}
+button:disabled{opacity:.4;cursor:not-allowed}
+input{width:64px;text-align:center;padding:8px;border:2px solid #d5dae1;border-radius:8px;font-weight:700}
+#receipt{max-width:520px;margin:32px auto 60px;background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 6px #0001}
+#receipt h2{text-align:center;margin-top:0}
+.line{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #d5dae1}
+.total{font-weight:800;border:0;padding-top:12px}
+#empty{text-align:center;color:#8a94a3}
+</style>
+</head>
+<body>
+<header>
+  <div class="avatar">D</div>
+  <h1>Spend Diwakar's Money</h1>
+  <p class="sub">What would you do with $100 billion? Try to spend it all.</p>
+</header>
+<div id="bar"><span id="money"></span><small>remaining</small></div>
+<div id="grid"></div>
+<div id="receipt"><h2>Diwakar's Receipt</h2><div id="lines"></div></div>
+
+<script>
+const START = 100_000_000_000;
+const items = [
+ ["🍔","Burger",3],["☕","Coffee",5],["🎬","Movie ticket",15],["👟","Sneakers",120],
+ ["📱","Smartphone",900],["🎮","Game console",500],["🎸","Electric guitar",1500],["⌚","Luxury watch",25000],
+ ["🚗","Sports car",120000],["🏠","Family house",450000],["🛥️","Yacht",7500000],["🚁","Helicopter",3000000],
+ ["⚽","Football club",900000000],["✈️","Private jet",75000000],["🏰","Castle",25000000],["🏝️","Private island",40000000],
+ ["🚀","Rocket launch",70000000],["🏟️","Stadium",1200000000],["🚢","Cruise ship",800000000],["🛰️","Satellite",300000000]
+];
+items.sort((a,b)=>a[2]-b[2]);
+const qty = items.map(()=>0);
+const fmt = n => "$" + n.toLocaleString("en-US");
+const spent = () => items.reduce((s,it,i)=>s+it[2]*qty[i],0);
+const grid = document.getElementById("grid");
+
+items.forEach((it,i)=>{
+  const c = document.createElement("div");
+  c.className = "card";
+  c.innerHTML = `<div class="emoji">${it[0]}</div><div class="name">${it[1]}</div>
+    <div class="price">${fmt(it[2])}</div>
+    <div class="row"><button class="sell">Sell</button><input type="number" min="0" value="0"><button class="buy">Buy</button></div>`;
+  const input = c.querySelector("input");
+  c.querySelector(".buy").onclick = ()=>{
+    const max = Math.floor((START-spent())/it[2]);
+    qty[i] += Math.min(1,max); update();
+  };
+  c.querySelector(".sell").onclick = ()=>{ qty[i] = Math.max(0,qty[i]-1); update(); };
+  input.oninput = ()=>{
+    let v = Math.max(0, Math.floor(+input.value||0));
+    const others = spent()-it[2]*qty[i];
+    v = Math.min(v, Math.floor((START-others)/it[2]));
+    qty[i] = v; update();
+  };
+  it.push(c,input);
+  grid.appendChild(c);
+});
+
+function update(){
+  const left = START-spent();
+  document.getElementById("money").textContent = fmt(left);
+  const lines = document.getElementById("lines");
+  let html = "";
+  items.forEach((it,i)=>{
+    it[4].value = qty[i];
+    it[3].querySelector(".buy").disabled = left < it[2];
+    it[3].querySelector(".sell").disabled = qty[i]===0;
+    if(qty[i]) html += `<div class="line"><span>${it[1]} × ${qty[i].toLocaleString()}</span><span>${fmt(it[2]*qty[i])}</span></div>`;
+  });
+  lines.innerHTML = html
+    ? html + `<div class="line total"><span>TOTAL</span><span>${fmt(spent())}</span></div>`
+    : `<p id="empty">Nothing purchased yet.</p>`;
+}
+update();
+</script>
+</body>
+</html>
